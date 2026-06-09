@@ -102,11 +102,27 @@ setCallbacks({
 
 export { executeBuyEntry2, executeBuyAll };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SEND APPROVAL REQUESTS — support auto execute mode
+// ─────────────────────────────────────────────────────────────────────────────
 async function sendApprovalRequests(candidates) {
+  const isAuto     = config.trading.autoExecute === true;
   const timeoutMin = config.trading.approvalTimeoutMin ?? 60;
-  for (const candidate of candidates) {
-    const added = addToQueue(candidate, timeoutMin);
-    if (added) await notifyApprovalRequest({ candidate, timeoutMin });
+
+  if (isAuto) {
+    // ── AUTO MODE: langsung eksekusi full position ──────────────────────────
+    log('approval', `🤖 AUTO EXECUTE mode aktif — ${candidates.length} kandidat akan langsung dibeli`);
+    for (const candidate of candidates) {
+      log('approval', `🤖 Auto execute: ${candidate.symbol}`);
+      await executeBuyAll(candidate);
+      await sleep(500); // jeda kecil antar order
+    }
+  } else {
+    // ── MANUAL MODE: masuk queue, tunggu /approve ───────────────────────────
+    for (const candidate of candidates) {
+      const added = addToQueue(candidate, timeoutMin);
+      if (added) await notifyApprovalRequest({ candidate, timeoutMin });
+    }
   }
 }
 
@@ -150,8 +166,9 @@ export async function doGainerUTBotScreening() {
     }
 
     if (eligible.length > 0) {
-      log('screener', `  ${eligible.length} kandidat → approval queue`);
-      await notifyUTBot(eligible);
+      const isAuto = config.trading.autoExecute === true;
+      log('screener', `  ${eligible.length} kandidat → ${isAuto ? '🤖 auto execute' : 'approval queue'}`);
+      if (!isAuto) await notifyUTBot(eligible);
       await sendApprovalRequests(eligible);
     }
 
@@ -166,7 +183,7 @@ export async function doGainerUTBotScreening() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// UTBOT STANDALONE (untuk command /utbot manual)
+// UTBOT STANDALONE
 // ─────────────────────────────────────────────────────────────────────────────
 export async function doUTBotScreener() {
   if (_utbotBusy) { log('cron', 'UTBot masih berjalan, skip'); return []; }
@@ -187,13 +204,10 @@ export async function doUTBotScreener() {
       if (slotLeft <= 0) {
         await notifyError(`📡 UT Bot: ${eligible.length} BUY signal tapi slot penuh (${openCount}/${maxPos})`);
       } else {
-        const toQueue    = eligible.slice(0, slotLeft);
-        const timeoutMin = config.trading.approvalTimeoutMin ?? 60;
-        await notifyUTBot(signals);
-        for (const s of toQueue) {
-          const added = addToQueue(s, timeoutMin);
-          if (added) await notifyApprovalRequest({ candidate: s, timeoutMin });
-        }
+        const toProcess = eligible.slice(0, slotLeft);
+        const isAuto    = config.trading.autoExecute === true;
+        if (!isAuto) await notifyUTBot(signals);
+        await sendApprovalRequests(toProcess);
       }
     } else if (signals.length > 0) {
       await notifyUTBot(signals);
@@ -210,7 +224,7 @@ export async function doUTBotScreener() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// GAINER ONLY (untuk command /gainer manual — tampilkan list saja)
+// GAINER ONLY
 // ─────────────────────────────────────────────────────────────────────────────
 export async function doGainerScreening() {
   if (_utbotBusy) { log('cron', 'Screening masih berjalan, skip'); return []; }
@@ -289,11 +303,13 @@ async function showStatus() {
   const stats     = getStats();
   const positions = getAllPositions();
   const pending   = getPendingQueue();
+  const isAuto    = config.trading.autoExecute === true;
 
   console.log('\n══════════════════════════════════════');
   console.log('  📊 STATUS BOT v3.2');
   console.log('══════════════════════════════════════');
   console.log(`  Mode     : ${isDryRun ? '🧪 DRY RUN' : '💸 LIVE'}`);
+  console.log(`  Entry    : ${isAuto ? '🤖 AUTO EXECUTE' : '✋ MANUAL APPROVE'}`);
   console.log(`  Open Pos : ${stats.openPositions}/${config.trading.maxOpenPositions}`);
   console.log(`  Closed   : ${stats.closedCount}`);
   console.log(`  Total PnL: ${stats.totalPnlUsdt >= 0 ? '+' : ''}${stats.totalPnlUsdt?.toFixed(2)} USDT`);
@@ -330,11 +346,13 @@ async function showStatus() {
 // ─────────────────────────────────────────────────────────────────────────────
 function startREPL() {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout, prompt: '\n[bitget-bot v3.2] > ' });
-  console.log('\n📖 Perintah: status | gainer | utbot | pipeline | screen | manage | stats | stop | help\n');
+  console.log('\n📖 Perintah: status | gainer | utbot | pipeline | screen | manage | stats | automode | stop | help\n');
   rl.prompt();
 
   rl.on('line', async (line) => {
-    const cmd = line.trim().toLowerCase();
+    const parts = line.trim().toLowerCase().split(/\s+/);
+    const cmd   = parts[0];
+    const arg   = parts[1];
     if (!cmd) { rl.prompt(); return; }
     switch (cmd) {
       case 'status':   await showStatus(); break;
@@ -344,18 +362,34 @@ function startREPL() {
       case 'screen':   await doScreening(); break;
       case 'manage':   await doManagement(); break;
       case 'stats':    await notifyStats(getStats()); console.log('📊 Stats dikirim ke Telegram'); break;
+      case 'automode': {
+        const { saveConfig } = await import('./config.js');
+        if (arg === 'on') {
+          saveConfig({ trading: { autoExecute: true } });
+          console.log('🤖 Auto Execute: ON — sinyal akan langsung dibeli');
+        } else if (arg === 'off') {
+          saveConfig({ trading: { autoExecute: false } });
+          console.log('✋ Auto Execute: OFF — sinyal masuk approval queue');
+        } else {
+          console.log(`Auto Execute sekarang: ${config.trading.autoExecute ? '🤖 ON' : '✋ OFF'}`);
+          console.log('Gunakan: automode on | automode off');
+        }
+        break;
+      }
       case 'stop':     console.log('🛑 Menghentikan bot...'); stopCron(); process.exit(0); break;
       case 'help':
         console.log([
           '',
-          '  status   — posisi terbuka & PnL',
-          '  gainer   — tampilkan koin gainer ≥5%',
-          '  utbot    — UT Bot Alert screener standalone',
-          '  pipeline — Gainer ≥5% → UTBot (pipeline utama)',
-          '  screen   — jalankan pipeline sekarang',
-          '  manage   — cek TP/SL semua posisi',
-          '  stats    — kirim ringkasan ke Telegram',
-          '  stop     — hentikan bot',
+          '  status        — posisi terbuka & PnL',
+          '  gainer        — tampilkan koin gainer ≥5%',
+          '  utbot         — UT Bot Alert screener standalone',
+          '  pipeline      — Gainer ≥5% → UTBot (pipeline utama)',
+          '  screen        — jalankan pipeline sekarang',
+          '  manage        — cek TP/SL semua posisi',
+          '  stats         — kirim ringkasan ke Telegram',
+          '  automode on   — aktifkan auto execute (langsung beli)',
+          '  automode off  — kembali ke manual approve',
+          '  stop          — hentikan bot',
           '',
         ].join('\n')); break;
       default: console.log(`❓ Perintah tidak dikenal: "${cmd}". Ketik "help".`);
@@ -375,6 +409,7 @@ async function main() {
   console.log('║  Bitget Spot Bot v3.2 — Gainer UTBot Pipeline    ║');
   console.log('╚══════════════════════════════════════════════════╝');
   console.log(`  Mode: ${isDryRun ? '🧪 DRY RUN' : '💸 LIVE TRADING'}`);
+  console.log(`  Entry: ${config.trading.autoExecute ? '🤖 AUTO EXECUTE' : '✋ MANUAL APPROVE'}`);
   console.log('');
 
   if (!isDryRun) {
@@ -393,7 +428,8 @@ async function main() {
   const utbotMin  = cfg.screening?.utbot?.checkIntervalMin ?? 60;
 
   log('startup', `Config:`);
-  log('startup', `  Budget/trade : ${cfg.trading.budgetPerTrade} USDT (E1 ${pct1}%: ${(cfg.trading.budgetPerTrade * pct1 / 100).toFixed(0)}, E2 ${pct2}%: ${(cfg.trading.budgetPerTrade * pct2 / 100).toFixed(0)})`);
+  log('startup', `  Budget/trade : ${cfg.trading.budgetPerTrade} USDT`);
+  log('startup', `  Entry mode   : ${cfg.trading.autoExecute ? '🤖 AUTO EXECUTE (100%)' : `✋ MANUAL (E1 ${pct1}% / E2 ${pct2}%)`}`);
   log('startup', `  Max posisi   : ${cfg.trading.maxOpenPositions}`);
   log('startup', `  Min gainer   : ${cfg.screening?.gainer?.minGainPct ?? 5}%`);
   log('startup', `Jadwal:`);
@@ -407,7 +443,7 @@ async function main() {
   if (args.includes('--utbot-only'))    { await doUTBotScreener(); process.exit(0); }
 
   await initState();
-  await initSymbolFilter(); // load daftar crypto spot dari Bitget API
+  await initSymbolFilter();
 
   log('startup', 'Menjalankan management cycle pertama...');
   await doManagement();

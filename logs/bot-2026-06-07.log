@@ -1,0 +1,107 @@
+[2026-06-07T22:56:42.586Z] [STATE_ERROR ] Gagal baca state lokal: Unexpected end of JSON input
+[2026-06-07T22:56:42.655Z] [STARTUP     ] 🧪 DRY RUN mode - API connection skipped
+[2026-06-07T22:56:42.657Z] [STARTUP     ] Config:
+[2026-06-07T22:56:42.659Z] [STARTUP     ]   Budget/trade : 100 USDT (E1 55%: 55, E2 45%: 45)
+[2026-06-07T22:56:42.661Z] [STARTUP     ]   Max posisi   : 5
+[2026-06-07T22:56:42.664Z] [STARTUP     ]   Min gainer   : 5%
+[2026-06-07T22:56:42.665Z] [STARTUP     ] Jadwal:
+[2026-06-07T22:56:42.666Z] [STARTUP     ]   Gainer+UTBot : setiap 60 menit
+[2026-06-07T22:56:42.668Z] [STARTUP     ]   Management   : setiap 10 menit
+[2026-06-07T22:56:43.744Z] [STATE       ] 💾 State dari lokal: 0 posisi terbuka
+[2026-06-07T22:56:43.745Z] [SYMBOL_FILTER] Memuat daftar symbol crypto spot dari Bitget...
+[2026-06-07T22:56:44.006Z] [SYMBOL_FILTER] ✅ Symbol cache updated: 632 crypto spot, 227 non-crypto (tokenized/RWA) difilter
+[2026-06-07T22:56:44.007Z] [STARTUP     ] Menjalankan management cycle pertama...
+[2026-06-07T22:56:44.009Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-07T22:56:44.010Z] [TELEGRAM    ] Polling dihentikan
+[2026-06-07T22:56:44.010Z] [CRON        ] Cron aktif:
+[2026-06-07T22:56:44.011Z] [CRON        ]   Gainer+UTBot: 0 * * * * → setiap 60 menit
+[2026-06-07T22:56:44.012Z] [CRON        ]   Management  : */10 * * * * → setiap 10 menit
+[2026-06-07T22:56:44.017Z] [TELEGRAM    ] ✅ Telegram polling aktif (v3.2 Gainer+UTBot)
+[2026-06-07T22:56:44.026Z] [API_SERVER  ] ✅ Dashboard API berjalan di http://localhost:3000
+[2026-06-07T22:56:44.027Z] [API_SERVER  ]    Buka dashboard.html di browser dan set API URL ke http://localhost:3000
+[2026-06-07T23:00:13.585Z] [STATE_ERROR ] Gagal baca state lokal: Unexpected end of JSON input
+[2026-06-07T23:00:13.592Z] [STARTUP     ] 🧪 DRY RUN mode - API connection skipped
+[2026-06-07T23:00:13.593Z] [STARTUP     ] Config:
+[2026-06-07T23:00:13.593Z] [STARTUP     ]   Budget/trade : 100 USDT
+[2026-06-07T23:00:13.593Z] [STARTUP     ]   Entry mode   : ✋ MANUAL (E1 55% / E2 45%)
+[2026-06-07T23:00:13.594Z] [STARTUP     ]   Max posisi   : 5
+[2026-06-07T23:00:13.594Z] [STARTUP     ]   Min gainer   : 5%
+[2026-06-07T23:00:13.595Z] [STARTUP     ] Jadwal:
+[2026-06-07T23:00:13.595Z] [STARTUP     ]   Gainer+UTBot : setiap 60 menit
+[2026-06-07T23:00:13.597Z] [STARTUP     ]   Management   : setiap 10 menit
+[2026-06-07T23:00:14.648Z] [STATE       ] 💾 State dari lokal: 0 posisi terbuka
+[2026-06-07T23:00:14.650Z] [SYMBOL_FILTER] Memuat daftar symbol crypto spot dari Bitget...
+[2026-06-07T23:00:14.924Z] [SYMBOL_FILTER] ✅ Symbol cache updated: 632 crypto spot, 227 non-crypto (tokenized/RWA) difilter
+[2026-06-07T23:00:14.925Z] [STARTUP     ] Menjalankan management cycle pertama...
+[2026-06-07T23:00:14.926Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-07T23:00:14.927Z] [TELEGRAM    ] Polling dihentikan
+[2026-06-07T23:00:14.928Z] [CRON        ] Cron aktif:
+[2026-06-07T23:00:14.928Z] [CRON        ]   Gainer+UTBot: 0 * * * * → setiap 60 menit
+[2026-06-07T23:00:14.929Z] [CRON        ]   Management  : */10 * * * * → setiap 10 menit
+[2026-06-07T23:00:14.938Z] [TELEGRAM    ] ✅ Telegram polling aktif (v3.2 Gainer+UTBot)
+[2026-06-07T23:00:14.950Z] [API_SERVER  ] ✅ Dashboard API berjalan di http://localhost:3000
+[2026-06-07T23:00:14.950Z] [API_SERVER  ]    Buka dashboard.html di browser dan set API URL ke http://localhost:3000
+[2026-06-07T23:12:29.112Z] [STATE_ERROR ] Gagal baca state lokal: Unexpected end of JSON input
+[2026-06-07T23:12:29.119Z] [STARTUP     ] 🧪 DRY RUN mode - API connection skipped
+[2026-06-07T23:12:29.120Z] [STARTUP     ] Config:
+[2026-06-07T23:12:29.120Z] [STARTUP     ]   Budget/trade : 100 USDT
+[2026-06-07T23:12:29.121Z] [STARTUP     ]   Entry mode   : ✋ MANUAL (E1 55% / E2 45%)
+[2026-06-07T23:12:29.121Z] [STARTUP     ]   Max posisi   : 5
+[2026-06-07T23:12:29.121Z] [STARTUP     ]   Min gainer   : 5%
+[2026-06-07T23:12:29.122Z] [STARTUP     ] Jadwal:
+[2026-06-07T23:12:29.122Z] [STARTUP     ]   Gainer+UTBot : setiap 60 menit
+[2026-06-07T23:12:29.123Z] [STARTUP     ]   Management   : setiap 10 menit
+[2026-06-07T23:12:30.154Z] [STATE       ] 💾 State dari lokal: 0 posisi terbuka
+[2026-06-07T23:12:30.155Z] [SYMBOL_FILTER] Memuat daftar symbol crypto spot dari Bitget...
+[2026-06-07T23:12:30.423Z] [SYMBOL_FILTER] ✅ Symbol cache updated: 632 crypto spot, 227 non-crypto (tokenized/RWA) difilter
+[2026-06-07T23:12:30.424Z] [STARTUP     ] Menjalankan management cycle pertama...
+[2026-06-07T23:12:30.426Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-07T23:12:30.427Z] [TELEGRAM    ] Polling dihentikan
+[2026-06-07T23:12:30.427Z] [CRON        ] Cron aktif:
+[2026-06-07T23:12:30.428Z] [CRON        ]   Gainer+UTBot: 0 * * * * → setiap 60 menit
+[2026-06-07T23:12:30.428Z] [CRON        ]   Management  : */10 * * * * → setiap 10 menit
+[2026-06-07T23:12:30.435Z] [TELEGRAM    ] ✅ Telegram polling aktif (v3.2 Gainer+UTBot)
+[2026-06-07T23:12:30.446Z] [API_SERVER  ] ✅ Dashboard API berjalan di http://localhost:3000
+[2026-06-07T23:12:30.447Z] [API_SERVER  ]    Buka dashboard.html di browser dan set API URL ke http://localhost:3000
+[2026-06-07T23:20:00.639Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-07T23:26:04.493Z] [TELEGRAM    ] Cmd: /start
+[2026-06-07T23:26:49.882Z] [TELEGRAM    ] Cmd: /gainer
+[2026-06-07T23:26:50.661Z] [SCREENER    ] ══ Daily Gainer Screening (≥5% ≤20% · vol≥$5M) ══
+[2026-06-07T23:26:50.972Z] [SYMBOL_FILTER] Filter: 859 → 632 ticker (227 non-crypto dibuang)
+[2026-06-07T23:26:50.974Z] [SCREENER    ] Gainer ≥5%: 10 koin lolos (crypto spot murni)
+[2026-06-07T23:26:50.975Z] [SCREENER    ]   [G1] HUSDT +15.55% | Vol $12.9M
+[2026-06-07T23:26:50.975Z] [SCREENER    ]   [G2] WLDUSDT +12.99% | Vol $12.2M
+[2026-06-07T23:26:50.976Z] [SCREENER    ]   [G3] NEARUSDT +10.42% | Vol $6.2M
+[2026-06-07T23:26:50.976Z] [SCREENER    ]   [G4] ETHUSDT +7.85% | Vol $227.4M
+[2026-06-07T23:26:50.977Z] [SCREENER    ]   [G5] SOLUSDT +6.93% | Vol $115.8M
+[2026-06-07T23:26:50.977Z] [SCREENER    ]   [G6] XRPUSDT +6.46% | Vol $21.9M
+[2026-06-07T23:26:50.978Z] [SCREENER    ]   [G7] ADAUSDT +6.28% | Vol $6.0M
+[2026-06-07T23:26:50.978Z] [SCREENER    ]   [G8] SUIUSDT +6.04% | Vol $9.7M
+[2026-06-07T23:26:50.979Z] [SCREENER    ]   [G9] DOGEUSDT +5.80% | Vol $8.2M
+[2026-06-07T23:26:50.979Z] [SCREENER    ]   [G10] HYPEUSDT +5.57% | Vol $25.8M
+[2026-06-07T23:27:30.202Z] [TELEGRAM    ] Cmd: /pipeline
+[2026-06-07T23:27:31.437Z] [SCREENER    ] 🚀📡 Menjalankan Gainer ≥5% → UT Bot Pipeline...
+[2026-06-07T23:27:31.440Z] [SCREENER    ] ══ Gainer ≥5% → UT Bot Pipeline dimulai ══
+[2026-06-07T23:27:31.441Z] [SCREENER    ] ══ Daily Gainer Screening (≥5% ≤20% · vol≥$5M) ══
+[2026-06-07T23:27:31.717Z] [SYMBOL_FILTER] Filter: 859 → 632 ticker (227 non-crypto dibuang)
+[2026-06-07T23:27:31.718Z] [SCREENER    ] Gainer ≥5%: 10 koin lolos (crypto spot murni)
+[2026-06-07T23:27:31.719Z] [SCREENER    ]   [G1] HUSDT +15.61% | Vol $12.9M
+[2026-06-07T23:27:31.720Z] [SCREENER    ]   [G2] WLDUSDT +12.99% | Vol $12.2M
+[2026-06-07T23:27:31.720Z] [SCREENER    ]   [G3] NEARUSDT +10.25% | Vol $6.2M
+[2026-06-07T23:27:31.721Z] [SCREENER    ]   [G4] ETHUSDT +7.92% | Vol $227.6M
+[2026-06-07T23:27:31.722Z] [SCREENER    ]   [G5] SOLUSDT +6.97% | Vol $115.9M
+[2026-06-07T23:27:31.722Z] [SCREENER    ]   [G6] XRPUSDT +6.40% | Vol $21.9M
+[2026-06-07T23:27:31.723Z] [SCREENER    ]   [G7] ADAUSDT +6.27% | Vol $6.0M
+[2026-06-07T23:27:31.724Z] [SCREENER    ]   [G8] SUIUSDT +5.96% | Vol $9.7M
+[2026-06-07T23:27:31.725Z] [SCREENER    ]   [G9] DOGEUSDT +5.79% | Vol $8.3M
+[2026-06-07T23:27:31.725Z] [SCREENER    ]   [G10] HYPEUSDT +5.55% | Vol $25.8M
+[2026-06-07T23:27:31.726Z] [SCREENER    ] Pipeline: 10 gainer → scan UT Bot signal...
+[2026-06-07T23:27:31.727Z] [UTBOT       ] ══ UT Bot Alert Screener (1H | key=2 atr=10 | EMA21-1H: ON) ══
+[2026-06-07T23:27:31.728Z] [UTBOT       ] Dari gainer pipeline: 10 koin (sudah crypto spot murni)
+[2026-06-07T23:27:31.729Z] [UTBOT       ] Scanning 10 koin untuk BUY signal (crypto spot murni)...
+[2026-06-07T23:27:34.995Z] [UTBOT       ] UT Bot selesai → 0 BUY signal
+[2026-06-07T23:27:34.999Z] [SCREENER    ] Pipeline: tidak ada BUY signal UTBot dari gainer list.
+[2026-06-07T23:28:03.166Z] [TELEGRAM    ] Cmd: /status
+[2026-06-07T23:30:00.876Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-07T23:40:00.120Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-07T23:50:00.282Z] [MANAGER     ] Tidak ada posisi terbuka

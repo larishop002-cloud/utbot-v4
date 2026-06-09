@@ -136,6 +136,7 @@ async function handle(req, res) {
         stopLossPct:       config.management.stopLossPct,
         trailPct:          config.management.trailingStop.trailPct,
         isDryRun:          process.env.DRY_RUN === 'true',
+        autoExecute:       config.trading.autoExecute === true,  // ← tambahan
         aiEnabled:         !!(process.env.GEMINI_API_KEY || process.env.ANTHROPIC_API_KEY),
         aiStatus:          (() => { try { return getAIStatus(); } catch { return null; } })(),
       },

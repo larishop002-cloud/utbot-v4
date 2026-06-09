@@ -8,7 +8,7 @@ import { getStats, getAllPositions, getOpenSymbols, hasPosition } from './state.
 import { executeSell, executeBuy } from './executor.js';
 import { notifyBuy, notifyAIAnalysis } from './telegram.js';
 import { analyzeOnDemand, getAIStatus } from './aiAnalyst.js';
-import { config }              from './config.js';
+import { config, saveConfig }  from './config.js';
 
 const getToken  = () => process.env.TELEGRAM_BOT_TOKEN;
 const getChatId = () => process.env.TELEGRAM_CHAT_ID;
@@ -58,10 +58,12 @@ async function buildStatusText(callbacks) {
   const positions = getAllPositions();
   const pending   = callbacks.getPendingQueue();
   const isDryRun  = process.env.DRY_RUN === 'true';
+  const isAuto    = config.trading.autoExecute === true;
   const _aiSt = (() => { try { return getAIStatus(); } catch { return {enabled:false}; } })();
 
   let text = `📊 <b>Status Bot v3.2</b>\n`;
   text += `Mode     : ${isDryRun ? '🧪 DRY RUN' : '💸 LIVE'}\n`;
+  text += `Entry    : ${isAuto ? '🤖 AUTO EXECUTE' : '✋ Manual Approve'}\n`;
   text += `AI Analyst: ${_aiSt.enabled ? `🤖 ${_aiSt.provider}/${_aiSt.model}` : '⚠️ set GEMINI_API_KEY di .env'}\n`;
   text += `Open Pos : ${stats.openPositions}/${config.trading.maxOpenPositions}\n`;
   text += `Closed   : ${stats.closedCount}\n`;
@@ -123,6 +125,35 @@ async function handleCommand(chatId, text, callbacks) {
       break;
     }
 
+    // ── Auto Mode Toggle ──────────────────────────────────────────────────────
+    case '/automode': {
+      const argLow = parts[1]?.toLowerCase();
+      if (argLow === 'on') {
+        saveConfig({ trading: { autoExecute: true } });
+        await reply(chatId,
+          `🤖 <b>AUTO EXECUTE: ON</b>\n\n` +
+          `Setiap sinyal BUY dari pipeline akan langsung dieksekusi <b>100% posisi</b> tanpa perlu /approve.\n\n` +
+          `⚠️ Pastikan kamu sudah yakin dengan setting risk management sebelum mengaktifkan mode ini.\n\n` +
+          `Gunakan /automode off untuk kembali ke manual.`
+        );
+      } else if (argLow === 'off') {
+        saveConfig({ trading: { autoExecute: false } });
+        await reply(chatId,
+          `✋ <b>AUTO EXECUTE: OFF</b>\n\n` +
+          `Kembali ke mode manual — setiap sinyal akan masuk approval queue dan menunggu /approve.\n\n` +
+          `Gunakan /automode on untuk aktifkan auto execute.`
+        );
+      } else {
+        const isAuto = config.trading.autoExecute === true;
+        await reply(chatId,
+          `⚙️ <b>Entry Mode Saat Ini:</b> ${isAuto ? '🤖 AUTO EXECUTE' : '✋ Manual Approve'}\n\n` +
+          `/automode on   — langsung beli saat ada sinyal (100% posisi)\n` +
+          `/automode off  — sinyal masuk queue, tunggu /approve`
+        );
+      }
+      break;
+    }
+
     // ── Screener ─────────────────────────────────────────────────────────────
     case '/gainer': {
       await reply(chatId, '🚀 Mengambil daftar Gainer ≥5%...');
@@ -158,11 +189,13 @@ async function handleCommand(chatId, text, callbacks) {
     }
 
     case '/pipeline': {
+      const isAuto = config.trading.autoExecute === true;
       await reply(chatId,
-        '🚀📡 <b>Gainer ≥5% → UT Bot Pipeline</b>\n\n' +
-        'Step 1: Cari koin naik ≥5% dalam 24h...\n' +
-        'Step 2: Scan UTBot BUY signal (filter EMA21 1H)...\n\n' +
-        '<i>Estimasi: 1-3 menit</i>'
+        `🚀📡 <b>Gainer ≥5% → UT Bot Pipeline</b>\n\n` +
+        `Step 1: Cari koin naik ≥5% dalam 24h...\n` +
+        `Step 2: Scan UTBot BUY signal (filter EMA21 1H)...\n` +
+        `Mode: ${isAuto ? '🤖 AUTO EXECUTE' : '✋ Manual Approve'}\n\n` +
+        `<i>Estimasi: 1-3 menit</i>`
       );
       callbacks.doGainerUTBotScreening?.()
         .then(c => {
@@ -349,8 +382,12 @@ async function handleCommand(chatId, text, callbacks) {
 
     case '/help':
     default: {
+      const isAuto = config.trading.autoExecute === true;
       await reply(chatId,
         `🤖 <b>Bot v3.2 — Gainer UTBot Pipeline</b>\n\n` +
+        `<b>⚙️ Entry Mode:</b> ${isAuto ? '🤖 AUTO EXECUTE' : '✋ Manual Approve'}\n` +
+        `/automode on   — aktifkan auto execute (langsung beli 100%)\n` +
+        `/automode off  — kembali ke manual approve\n\n` +
         `<b>📡 Screening:</b>\n` +
         `/gainer          — Tampilkan koin naik ≥5% hari ini\n` +
         `/pipeline        — Gainer ≥5% → UTBot BUY signal (utama)\n` +

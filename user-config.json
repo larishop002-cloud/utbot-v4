@@ -6,6 +6,7 @@
     "gasReserve": 3,
     "approvalTimeoutMin": 30,
     "manualApproval": true,
+    "autoExecute": true,
     "splitEntry": {
       "enabled": true,
       "portion1Pct": 55,
@@ -18,7 +19,7 @@
     "gainer": {
       "minGainPct": 5,
       "maxGainPct": 20,
-      "minVolume24h": 5000000,
+      "minVolume24h": 2000000,
       "checkLimit": 300
     },
     "utbot": {

@@ -31,16 +31,23 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; min-height: 100vh; }
 .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-.topbar { display: flex; align-items: center; gap: 16px; padding: 0 20px; height: 48px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.topbar-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.topbar { display: flex; align-items: center; gap: 12px; padding: 0 20px; height: 48px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: nowrap; }
+.topbar-logo { font-family: var(--mono); font-size: 13px; font-weight: 500; letter-spacing: .04em; color: var(--text); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .topbar-logo span { opacity: .4; }
-.topbar-sep { width: 1px; height: 20px; background: var(--border); }
-.topbar-status { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
-.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); }
+.topbar-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.topbar-status { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); flex-shrink: 0; }
 .dot.live { background: var(--green); animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.api-input { font-family: var(--mono); font-size: 11px; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 8px; background: var(--bg); color: var(--text); width: 220px; outline: none; }
+
+/* ── Auto Execute Toggle ─────────────────────────────────────────── */
+/* mode badge di topbar */
+.mode-badge { font-family: var(--mono); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+.mode-badge.auto { background: var(--green-bg); color: var(--green); }
+.mode-badge.manual { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.api-input { font-family: var(--mono); font-size: 11px; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 8px; background: var(--bg); color: var(--text); width: 200px; outline: none; }
 .api-input:focus { border-color: var(--accent); }
 .btn { font-family: var(--sans); font-size: 12px; font-weight: 500; padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap; }
 .btn:hover { background: var(--bg); border-color: var(--border2); }
@@ -115,6 +122,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
 .modal { background: var(--surface); border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 8px 40px rgba(0,0,0,.15); padding: 24px; min-width: 420px; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto; }
 .modal-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
 .modal-close { float: right; cursor: pointer; color: var(--muted); font-size: 18px; line-height: 1; }
+
 </style>
 </head>
 <body>
@@ -127,7 +135,12 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
   <div class="topbar-sep"></div>
   <div class="topbar-status"><span id="modeLabel">—</span></div>
   <div class="topbar-sep"></div>
-  <div class="topbar-status">AI Analyst: <span id="aiLabel">—</span></div>
+  <div class="topbar-status">AI: <span id="aiLabel">—</span></div>
+  <div class="topbar-sep"></div>
+
+  <!-- ── ENTRY MODE BADGE ──────────────────────────────────────────── -->
+  <div class="topbar-status">Mode: <span class="mode-badge manual" id="entryModeBadge">Manual</span></div>
+
   <div class="topbar-right">
     <input class="api-input" id="apiUrl" placeholder="http://localhost:3000" value="http://localhost:3000">
     <button class="btn primary" onclick="connect()">Connect</button>
@@ -135,6 +148,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
     <span style="font-family:var(--mono);font-size:11px;color:var(--muted)" id="lastUpdate"></span>
   </div>
 </header>
+
 
 <div class="body">
 <nav class="sidenav">
@@ -160,7 +174,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
   <div class="stats-row">
     <div class="stat-card"><div class="stat-label">Total PnL</div><div class="stat-value" id="st-pnl">—</div><div class="stat-sub" id="st-pnl-sub"></div></div>
     <div class="stat-card"><div class="stat-label">Open Positions</div><div class="stat-value" id="st-open">—</div><div class="stat-sub" id="st-open-sub"></div></div>
-    <div class="stat-card"><div class="stat-label">Pending Approval</div><div class="stat-value" id="st-pending">—</div><div class="stat-sub">awaiting action</div></div>
+    <div class="stat-card"><div class="stat-label">Pending Approval</div><div class="stat-value" id="st-pending">—</div><div class="stat-sub" id="st-pending-sub">awaiting action</div></div>
     <div class="stat-card"><div class="stat-label">Closed Trades</div><div class="stat-value" id="st-closed">—</div><div class="stat-sub">all time</div></div>
     <div class="stat-card"><div class="stat-label">Budget / Trade</div><div class="stat-value" id="st-budget">—</div><div class="stat-sub" id="st-budget-sub"></div></div>
     <div class="stat-card"><div class="stat-label">TP / SL</div><div class="stat-value" id="st-tpsl">—</div><div class="stat-sub" id="st-trail">—</div></div>
@@ -173,7 +187,13 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
     </table>
   </div>
   <div class="panel">
-    <div class="panel-header"><div class="panel-title">◷ Pending Approval</div><div class="panel-actions"><button class="btn sm" onclick="showPage('pending')">View All →</button></div></div>
+    <div class="panel-header">
+      <div class="panel-title">◷ Pending Approval</div>
+      <div class="panel-actions">
+        <span id="autoModeOverviewBadge" style="display:none" class="badge green">🤖 Auto Execute ON</span>
+        <button class="btn sm" onclick="showPage('pending')">View All →</button>
+      </div>
+    </div>
     <table class="tbl">
       <thead><tr><th>Symbol</th><th>Price</th><th>Change 24h</th><th>Strategy</th><th>Triggered</th><th>Sisa</th><th>Action</th></tr></thead>
       <tbody id="ov-pending-body"><tr><td colspan="7" class="empty">Tidak ada kandidat pending</td></tr></tbody>
@@ -195,7 +215,13 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
 <!-- ═══════════════ PAGE: PENDING ══════════════════════════════════════════ -->
 <div class="page" id="page-pending">
   <div class="panel">
-    <div class="panel-header"><div class="panel-title">◷ Pending Approval Queue</div><div class="panel-actions"><button class="btn sm" onclick="refreshAll()">↻ Refresh</button></div></div>
+    <div class="panel-header">
+      <div class="panel-title">◷ Pending Approval Queue</div>
+      <div class="panel-actions">
+        <span id="autoModePendingBadge" style="display:none" class="badge green">🤖 Auto Mode ON</span>
+        <button class="btn sm" onclick="refreshAll()">↻ Refresh</button>
+      </div>
+    </div>
     <div id="pending-cards" style="padding:16px;display:flex;flex-direction:column;gap:12px"><div class="empty">Tidak ada kandidat pending</div></div>
   </div>
 </div>
@@ -233,8 +259,16 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
     <div class="panel-header"><div class="panel-title">⊙ Signal Scanner</div></div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
 
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
+      <!-- Entry Mode Toggle Card -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:16px">
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px">Entry Mode</div>
+          <div style="font-size:11px;color:var(--muted)" id="screenModeDesc">Sinyal masuk queue, tunggu /approve di Telegram atau klik tombol approve di dashboard.</div>
+        </div>
+        <span class="mode-badge manual" id="entryModeBadge2" style="font-size:12px">Manual</span>
+      </div>
 
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">
         <div class="panel" style="padding:20px;text-align:center">
           <div style="font-size:28px;margin-bottom:10px">🚀📡</div>
           <div style="font-weight:600;margin-bottom:6px;font-size:13px">Gainer + UTBot Pipeline</div>
@@ -244,7 +278,6 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
           <div style="font-family:var(--mono);font-size:10px;color:var(--green);margin-bottom:14px">Double filter · Momentum + Timing</div>
           <button class="btn primary" style="width:100%" onclick="doScreen('pipeline')">▶ Run Pipeline</button>
         </div>
-
         <div class="panel" style="padding:20px;text-align:center">
           <div style="font-size:28px;margin-bottom:10px">📡</div>
           <div style="font-weight:600;margin-bottom:6px;font-size:13px">UTBot Standalone</div>
@@ -254,7 +287,6 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); font
           <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px">Early breakout · Wider coverage</div>
           <button class="btn" style="width:100%" onclick="doScreen('utbot')">▶ Run UTBot</button>
         </div>
-
       </div>
 
       <div class="panel" style="padding:14px">
@@ -403,15 +435,19 @@ function setConn(ok) {
   document.getElementById('connLabel').textContent = ok ? 'Connected' : 'Disconnected';
 }
 
+// ── Render Stats + Auto Mode UI ───────────────────────────────────────────────
 function renderStats(d) {
-  const cfg = d.config || {};
-  const pnl = d.stats?.totalPnlUsdt ?? 0;
-  const el  = id => document.getElementById(id);
+  const cfg  = d.config || {};
+  const pnl  = d.stats?.totalPnlUsdt ?? 0;
+  const el   = id => document.getElementById(id);
+  const isAuto = cfg.autoExecute ?? false;
+
   el('st-pnl').textContent       = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT';
   el('st-pnl').className         = 'stat-value ' + (pnl >= 0 ? 'green' : 'red');
   el('st-open').textContent      = (d.stats?.openPositions ?? '—') + '/' + (cfg.maxOpenPositions ?? '—');
   el('st-open-sub').textContent  = 'slots used';
   el('st-pending').textContent   = d.pending?.length ?? '—';
+  el('st-pending-sub').textContent = isAuto ? '🤖 auto mode' : 'awaiting action';
   el('st-closed').textContent    = d.stats?.closedCount ?? '—';
   el('st-budget').textContent    = cfg.budgetPerTrade ?? '—';
   el('st-budget-sub').textContent= 'USDT per trade';
@@ -419,9 +455,40 @@ function renderStats(d) {
   el('st-trail').textContent     = `Trail ${cfg.trailPct ?? '—'}% after TP1`;
   el('modeLabel').textContent    = cfg.isDryRun ? '🧪 DRY RUN' : '💸 LIVE TRADING';
   const aiSt = cfg.aiStatus;
-  el('aiLabel').textContent = aiSt?.enabled ? `🤖 ${aiSt.provider} / ${aiSt.model}` : '⚠ Set API Key di .env';
+  el('aiLabel').textContent = aiSt?.enabled ? `🤖 ${aiSt.provider}` : '⚠ Set API Key';
+
+  // Update semua auto mode UI
+  updateAutoUI(isAuto);
 }
 
+// ── Entry Mode Badge UI ──────────────────────────────────────────────────────
+function updateAutoUI(isAuto) {
+  // Topbar badge
+  const b1 = document.getElementById('entryModeBadge');
+  if (b1) {
+    b1.textContent  = isAuto ? '🤖 Auto' : 'Manual';
+    b1.className    = 'mode-badge' + (isAuto ? ' auto' : ' manual');
+  }
+  // Screen page badge
+  const b2 = document.getElementById('entryModeBadge2');
+  if (b2) {
+    b2.textContent  = isAuto ? '🤖 Auto' : 'Manual';
+    b2.className    = 'mode-badge' + (isAuto ? ' auto' : ' manual');
+  }
+  // Screen page description
+  const desc = document.getElementById('screenModeDesc');
+  if (desc) desc.textContent = isAuto
+    ? 'Sinyal BUY langsung dieksekusi 100% posisi tanpa konfirmasi manual.'
+    : 'Sinyal masuk queue, tunggu /approve di Telegram atau klik approve di dashboard.';
+  // Overview badge
+  const ovBadge = document.getElementById('autoModeOverviewBadge');
+  if (ovBadge) ovBadge.style.display = isAuto ? '' : 'none';
+  // Pending badge
+  const pendBadge = document.getElementById('autoModePendingBadge');
+  if (pendBadge) pendBadge.style.display = isAuto ? '' : 'none';
+}
+
+// ── Render Positions ──────────────────────────────────────────────────────────
 function renderOvPositions(positions) {
   const tbody = document.getElementById('ov-positions-body');
   const entries = Object.entries(positions || {});
@@ -480,8 +547,12 @@ function posRowFull(sym, p) {
 }
 
 function renderOvPending(pending) {
-  const tbody = document.getElementById('ov-pending-body');
-  if (!pending?.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Tidak ada kandidat pending</td></tr>'; return; }
+  const tbody  = document.getElementById('ov-pending-body');
+  const isAuto = _data?.config?.autoExecute ?? false;
+  if (!pending?.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">${isAuto ? '🤖 Auto mode aktif — sinyal langsung dieksekusi' : 'Tidak ada kandidat pending'}</td></tr>`;
+    return;
+  }
   tbody.innerHTML = pending.map(p => {
     const chg    = p.change24h >= 0 ? `+${p.change24h?.toFixed(2)}%` : `${p.change24h?.toFixed(2)}%`;
     const chgCls = p.change24h >= 0 ? 'green' : 'red';
@@ -503,7 +574,11 @@ function renderOvPending(pending) {
 
 function renderPendingPage(pending) {
   const container = document.getElementById('pending-cards');
-  if (!pending?.length) { container.innerHTML = '<div class="empty">Tidak ada kandidat pending</div>'; return; }
+  const isAuto    = _data?.config?.autoExecute ?? false;
+  if (!pending?.length) {
+    container.innerHTML = `<div class="empty">${isAuto ? '🤖 Auto Execute aktif — sinyal langsung dieksekusi tanpa masuk queue' : 'Tidak ada kandidat pending'}</div>`;
+    return;
+  }
   container.innerHTML = pending.map(p => {
     const chg    = p.change24h >= 0 ? `+${p.change24h?.toFixed(2)}%` : `${p.change24h?.toFixed(2)}%`;
     const chgCls = p.change24h >= 0 ? 'green' : 'red';
@@ -673,11 +748,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function doScreen(type) {
-  const res = await apiPost('/api/screen', { type });
+  await apiPost('/api/screen', { type });
   toast(`🔍 Screening ${type} dimulai di background`, '');
   const box = document.getElementById('screen-log');
   box.style.display = 'block';
-  box.textContent   = `Screening ${type} berjalan... pantau di Bot Logs`;
+  const isAuto = _data?.config?.autoExecute ?? false;
+  box.textContent = `Screening ${type} berjalan...\nMode: ${isAuto ? '🤖 AUTO EXECUTE' : '✋ Manual Approve'}\nPantau di Bot Logs`;
   setTimeout(() => { showPage('logs'); loadLogs(); }, 2000);
 }
 
@@ -753,7 +829,22 @@ async function loadConfig() {
   const trade = cfg.trading || {};
   const gainer = cfg.screening?.gainer || {};
   const utbot  = cfg.screening?.utbot  || {};
+  const isAuto = trade.autoExecute ?? false;
+
   document.getElementById('config-grid').innerHTML = `
+    <div class="field" style="grid-column:1/-1">
+      <label>Entry Mode</label>
+      <div style="display:flex;gap:24px;padding:10px 0;align-items:center;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:400">
+          <input type="radio" name="entryMode" id="cfg-manual" value="manual" ${!isAuto ? 'checked' : ''}>
+          <span>✋ <b>Manual Approve</b> — sinyal masuk queue, tunggu /approve</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;font-weight:400">
+          <input type="radio" name="entryMode" id="cfg-auto" value="auto" ${isAuto ? 'checked' : ''}>
+          <span>🤖 <b>Auto Execute</b> — langsung beli 100% saat sinyal muncul</span>
+        </label>
+      </div>
+    </div>
     <div class="field"><label>Budget / Trade (USDT)</label><input id="cfg-budget" type="number" value="${trade.budgetPerTrade||150}"></div>
     <div class="field"><label>Max Open Positions</label><input id="cfg-maxpos" type="number" value="${trade.maxOpenPositions||5}"></div>
     <div class="field"><label>Take Profit % (TP1)</label><input id="cfg-tp" type="number" step="0.1" value="${mgmt.takeProfitPct||8}"></div>
@@ -774,11 +865,13 @@ async function loadConfig() {
 
 async function saveConfig() {
   if (!_fullConfig) { toast('Load config dulu', 'err'); return; }
+  const autoExecute = document.getElementById('cfg-auto')?.checked ?? false;
   const updates = {
     trading: {
       budgetPerTrade:     parseFloat(document.getElementById('cfg-budget').value),
       maxOpenPositions:   parseInt(document.getElementById('cfg-maxpos').value),
       approvalTimeoutMin: parseInt(document.getElementById('cfg-timeout').value),
+      autoExecute,
     },
     management: {
       takeProfitPct: parseFloat(document.getElementById('cfg-tp').value),
@@ -803,6 +896,7 @@ async function saveConfig() {
   };
   const res = await apiPost('/api/config', updates);
   toast(res.ok ? '✅ Config tersimpan' : `❌ ${res.error}`, res.ok ? 'ok' : 'err');
+  if (res.ok) refreshAll();
 }
 
 async function saveWhitelist() {

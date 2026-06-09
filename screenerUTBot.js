@@ -45,8 +45,10 @@ async function is1HBullish(symbol) {
   }
 }
 
-async function scanSymbol(symbol, cfg) {
+// ── Scan satu symbol dengan retry ─────────────────────────────────────────────
+async function scanSymbol(symbol, cfg, _retry = 0) {
   const { keyValue, atrPeriod, filter1H_EMA21 } = cfg;
+  const MAX_RETRY = 2;
 
   try {
     const raw1H = await getCandles(symbol, '1h', Math.max(atrPeriod * 3 + 20, 60));
@@ -124,7 +126,20 @@ async function scanSymbol(symbol, cfg) {
     };
 
   } catch (err) {
-    log('utbot_error', `Scan ${symbol}: ${err.message}`);
+    const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout') || err.message?.includes('exceeded');
+
+    if (isTimeout && _retry < MAX_RETRY) {
+      const waitMs = 3000 * (_retry + 1);
+      log('utbot', `  ⏳ ${symbol} timeout — retry ${_retry + 1}/${MAX_RETRY} dalam ${waitMs / 1000}s`);
+      await sleep(waitMs);
+      return scanSymbol(symbol, cfg, _retry + 1);
+    }
+
+    if (isTimeout) {
+      log('utbot', `  ⚠ ${symbol} timeout setelah ${MAX_RETRY + 1} percobaan — skip`);
+    } else {
+      log('utbot_error', `Scan ${symbol}: ${err.message}`);
+    }
     return null;
   }
 }
@@ -146,11 +161,9 @@ export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
   let filtered;
 
   if (fromGainer && Array.isArray(tickersOrSymbols)) {
-    // Dari gainer pipeline — sudah pasti crypto spot (screenerGainer sudah filter)
     filtered = tickersOrSymbols.filter(t => !hasPosition(t.symbol));
     log('utbot', `Dari gainer pipeline: ${filtered.length} koin (sudah crypto spot murni)`);
   } else {
-    // Standalone mode — perlu filter crypto only
     const tickers = Array.isArray(tickersOrSymbols) ? tickersOrSymbols : [];
     const cryptoTickers = await filterCryptoOnly(tickers);
 
@@ -167,11 +180,27 @@ export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
 
   log('utbot', `Scanning ${filtered.length} koin untuk BUY signal (crypto spot murni)...`);
 
-  const signals = [];
+  const signals    = [];
+  let   timeouts   = 0;
+  const MAX_CONSEC_TIMEOUT = 3; // stop sementara jika 3 timeout berturut-turut
 
   for (let i = 0; i < filtered.length; i++) {
     const coin   = filtered[i];
+    const before = Date.now();
     const result = await scanSymbol(coin.symbol, { keyValue, atrPeriod, filter1H_EMA21 });
+    const elapsed = Date.now() - before;
+
+    // Deteksi timeout berturut-turut
+    if (elapsed > 15000) {
+      timeouts++;
+      if (timeouts >= MAX_CONSEC_TIMEOUT) {
+        log('utbot', `  ⚠ ${timeouts} timeout berturut-turut — jeda 10s untuk stabilkan koneksi`);
+        await sleep(10000);
+        timeouts = 0;
+      }
+    } else {
+      timeouts = 0;
+    }
 
     if (result) {
       const hasPos     = hasPosition(result.symbol);
@@ -188,8 +217,11 @@ export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
       }
     }
 
-    if (i % 10 === 9) await sleep(500);
-    else await sleep(150);
+    // Jeda adaptif: lebih lama setelah tiap 5 koin, atau jika baru timeout
+    if (i % 10 === 9)       await sleep(1000);
+    else if (i % 5 === 4)   await sleep(500);
+    else if (elapsed > 5000) await sleep(500); // lambat? beri jeda ekstra
+    else                     await sleep(200);
   }
 
   log('utbot', `UT Bot selesai → ${signals.length} BUY signal`);

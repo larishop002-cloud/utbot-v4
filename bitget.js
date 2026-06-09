@@ -13,7 +13,9 @@ function sign(timestamp, method, requestPath, body, secretKey) {
   return crypto.createHmac('sha256', secretKey).update(msg).digest('base64');
 }
 
-async function request(method, path, params = {}, body = null, auth = true) {
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function request(method, path, params = {}, body = null, auth = true, _retry = 0) {
   const timestamp   = Date.now().toString();
   let requestPath   = path;
 
@@ -31,12 +33,28 @@ async function request(method, path, params = {}, body = null, auth = true) {
     headers['ACCESS-PASSPHRASE'] = process.env.BITGET_PASSPHRASE;
   }
 
+  // Timeout lebih longgar untuk candle requests, standar untuk yang lain
+  const isCandle  = path.includes('candles');
+  const timeout   = isCandle ? 20000 : 15000;
+
   try {
-    const res  = await axios({ method, url: BASE_URL + requestPath, headers, data: body || undefined, timeout: 10000 });
+    const res  = await axios({ method, url: BASE_URL + requestPath, headers, data: body || undefined, timeout });
     const data = res.data;
     if (data.code !== '00000' && data.code !== 0) throw new Error(`Bitget API ${data.code}: ${data.msg}`);
     return data.data;
   } catch (err) {
+    // Retry on timeout atau 5xx
+    const isTimeout = err.code === 'ECONNABORTED' || err.message?.includes('timeout');
+    const is5xx     = err.response?.status >= 500;
+    const maxRetry  = isCandle ? 3 : 2;
+
+    if ((isTimeout || is5xx) && _retry < maxRetry) {
+      const waitMs = (isCandle ? 2000 : 1000) * (_retry + 1);
+      log('bitget_warn', `${isTimeout ? 'Timeout' : `HTTP ${err.response?.status}`} ${path} — retry ${_retry + 1}/${maxRetry} dalam ${waitMs / 1000}s`);
+      await sleep(waitMs);
+      return request(method, path, params, body, auth, _retry + 1);
+    }
+
     if (err.response) throw new Error(`Bitget HTTP ${err.response.status}: ${JSON.stringify(err.response.data)}`);
     throw err;
   }
@@ -75,8 +93,6 @@ export async function placeOrder({ symbol, side, orderType, size, quoteMode = fa
   };
 
   if (side === 'buy' && orderType === 'market' && quoteMode) {
-    // Market buy dengan USDT amount — Bitget v2 API pakai field 'size' dalam quote currency
-    // quoteSize tidak dipakai di API v2, cukup size saja
     body.size = String(size);
   } else {
     body.size = String(size);

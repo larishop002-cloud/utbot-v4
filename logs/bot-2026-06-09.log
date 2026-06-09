@@ -1,0 +1,36 @@
+[2026-06-09T00:00:00.727Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-09T00:00:00.730Z] [CRON        ] 🚀📡 Gainer+UTBot pipeline (setiap 60 menit)
+[2026-06-09T00:00:00.734Z] [SCREENER    ] 🚀📡 Menjalankan Gainer ≥5% → UT Bot Pipeline...
+[2026-06-09T00:00:00.737Z] [SCREENER    ] ══ Gainer ≥5% → UT Bot Pipeline dimulai ══
+[2026-06-09T00:00:00.741Z] [SCREENER    ] ══ Daily Gainer Screening (≥5% ≤20% · vol≥$2M) ══
+[2026-06-09T00:00:01.020Z] [SYMBOL_FILTER] Filter: 889 → 632 ticker (257 non-crypto dibuang)
+[2026-06-09T00:00:01.027Z] [SCREENER    ] Gainer ≥5%: 2 koin lolos (crypto spot murni)
+[2026-06-09T00:00:01.028Z] [SCREENER    ]   [G1] SLXUSDT +12.86% | Vol $14.5M
+[2026-06-09T00:00:01.029Z] [SCREENER    ]   [G2] HYPEUSDT +6.97% | Vol $37.6M
+[2026-06-09T00:00:01.030Z] [SCREENER    ] Pipeline: 2 gainer → scan UT Bot signal...
+[2026-06-09T00:00:01.032Z] [UTBOT       ] ══ UT Bot Alert Screener (1H | key=2 atr=10 | EMA21-1H: ON) ══
+[2026-06-09T00:00:01.034Z] [UTBOT       ] Dari gainer pipeline: 2 koin (sudah crypto spot murni)
+[2026-06-09T00:00:01.035Z] [UTBOT       ] Scanning 2 koin untuk BUY signal (crypto spot murni)...
+[2026-06-09T00:00:01.719Z] [UTBOT       ] UT Bot selesai → 0 BUY signal
+[2026-06-09T00:00:01.722Z] [SCREENER    ] Pipeline: tidak ada BUY signal UTBot dari gainer list.
+[2026-06-09T00:10:00.625Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-09T00:30:00.765Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-09T00:40:00.008Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-09T00:50:00.205Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-09T01:00:00.416Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-09T01:00:00.513Z] [CRON        ] 🚀📡 Gainer+UTBot pipeline (setiap 60 menit)
+[2026-06-09T01:00:00.515Z] [SCREENER    ] 🚀📡 Menjalankan Gainer ≥5% → UT Bot Pipeline...
+[2026-06-09T01:00:00.519Z] [SCREENER    ] ══ Gainer ≥5% → UT Bot Pipeline dimulai ══
+[2026-06-09T01:00:00.521Z] [SCREENER    ] ══ Daily Gainer Screening (≥5% ≤20% · vol≥$2M) ══
+[2026-06-09T01:00:00.829Z] [SYMBOL_FILTER] Filter: 889 → 632 ticker (257 non-crypto dibuang)
+[2026-06-09T01:00:00.832Z] [SCREENER    ] Gainer ≥5%: 2 koin lolos (crypto spot murni)
+[2026-06-09T01:00:00.833Z] [SCREENER    ]   [G1] ALLOUSDT +17.90% | Vol $7.1M
+[2026-06-09T01:00:00.835Z] [SCREENER    ]   [G2] BTWUSDT +8.89% | Vol $5.6M
+[2026-06-09T01:00:00.836Z] [SCREENER    ] Pipeline: 2 gainer → scan UT Bot signal...
+[2026-06-09T01:00:00.837Z] [UTBOT       ] ══ UT Bot Alert Screener (1H | key=2 atr=10 | EMA21-1H: ON) ══
+[2026-06-09T01:00:00.838Z] [UTBOT       ] Dari gainer pipeline: 2 koin (sudah crypto spot murni)
+[2026-06-09T01:00:00.839Z] [UTBOT       ] Scanning 2 koin untuk BUY signal (crypto spot murni)...
+[2026-06-09T01:00:02.201Z] [UTBOT       ] UT Bot selesai → 0 BUY signal
+[2026-06-09T01:00:02.203Z] [SCREENER    ] Pipeline: tidak ada BUY signal UTBot dari gainer list.
+[2026-06-09T01:10:00.641Z] [MANAGER     ] Tidak ada posisi terbuka
+[2026-06-09T01:18:08.664Z] [TELEGRAM    ] Polling dihentikan
