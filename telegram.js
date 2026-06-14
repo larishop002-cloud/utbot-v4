@@ -85,6 +85,9 @@ export async function notifyBuy({ symbol, price, quantity, budget, score, signal
     .map(([, v]) => `• ${v.label}`)
     .join('\n');
 
+  const trailPct = config.management?.trailingStop?.trailPct ?? 2;
+  const tpPct    = config.management?.takeProfitPct ?? 8;
+
   const lines = [
     `🟢 <b>BUY Executed</b> — ${stratLabel(strategy)}`,
     portionLabel,
@@ -92,8 +95,8 @@ export async function notifyBuy({ symbol, price, quantity, budget, score, signal
     `Pair  : <b>${symbol}</b>`,
     `Entry : ${price}`,
     `SL    : ${slDisplay}`,
-    `TP1   : Resistance terdekat → tutup 50% + BEP`,
-    `TP2+  : Trailing Stop 2% callback`,
+    `TP    : +${tpPct}% → Close 100% posisi`,
+    `Trail : ${trailPct}% callback (aktif jika profit ≥ ${config.management?.trailingStop?.activateAtProfitPct ?? 4}%)`,
     signalLines ? `\n${signalLines}` : '',
     ``,
     `📦 Qty: ${quantity} | Budget: ${budget} USDT`,
@@ -209,17 +212,15 @@ export async function notifySell({ symbol, entryPrice, exitPrice, pnlPct, pnlUsd
   const emoji = pnlPct >= 0 ? '🟢' : '🔴';
   const sign  = pnlPct >= 0 ? '+' : '';
   const labels = {
-    take_profit:   '🎯 Take Profit',
-    tp1_partial:   '🎯 TP1 (50% ditutup) → SL ke BEP',
+    take_profit:   '🎯 Take Profit — Close 100%',
     stop_loss:     '🛑 Stop Loss',
     break_even_sl: '🔁 Break Even SL',
     trailing_stop: '🔻 Trailing Stop',
     max_hold_time: '⏰ Max Hold Time',
     manual_sell:   '🖐 Manual Sell',
   };
-  const extra = reason === 'tp1_partial'  ? `\n📌 Sisa 50% jalan | Trailing 2% aktif`
-    : reason === 'break_even_sl'          ? `\n✅ Modal dilindungi`
-    : reason === 'trailing_stop'          ? `\n📈 Profit diamankan via trailing`
+  const extra = reason === 'break_even_sl' ? `\n✅ Modal dilindungi`
+    : reason === 'trailing_stop'           ? `\n📈 Profit diamankan via trailing`
     : '';
   await send(
     `${emoji} <b>SELL</b> ${symbol}\n` +
@@ -253,7 +254,7 @@ export async function notifyStartup(dryRun) {
   await send(
     `🚀 <b>Bot v3.2 — Gainer+UTBot Pipeline</b>\n` +
     `Mode: ${dryRun ? '🧪 DRY RUN' : '💸 LIVE TRADING'}\n` +
-    `📡 Pipeline   : Gainer ≥5% → UTBot 1H\n` +
+    `📡 Pipeline   : Gainer ≥5% → UTBot 1H + 4H\n` +
     `🤖 AI Analyst : ${getAIInfo()} (manual via /analyze)\n` +
     `⚙️  Management : setiap 10 menit\n` +
     `Time: ${new Date().toLocaleString('id-ID')}`
