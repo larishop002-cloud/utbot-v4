@@ -26,11 +26,12 @@
       "enabled": true,
       "keyValue": 2,
       "atrPeriod": 10,
-      "timeframe": "1h",
-      "checkIntervalMin": 60,
+      "timeframe": "4h",
+      "checkIntervalMin": 240,
       "minVolume24h": 5000000,
-      "filter1H_EMA21": true,
-      "maxSignalsPerRun": 5
+      "filter1H_EMA21": false,
+      "filter4H_EMA21": false,
+      "maxSignalsPerRun": 10
     }
   },
   "management": {

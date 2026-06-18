@@ -1,8 +1,10 @@
 /**
- * Screener — UT Bot Alert (1H + 4H, Opsi B: Either Timeframe)
+ * Screener — UT Bot Alert (4H only dari pipeline Gainer)
  *
- * Sinyal muncul jika BUY signal ada di 1H ATAU 4H.
- * Tiap sinyal diberi tag timeframe mana yang trigger.
+ * Perubahan v3.3:
+ *  - Baca config timeframe dari user-config.json
+ *  - Jika timeframe = '4h', hanya scan 4H (skip 1H)
+ *  - Filter EMA21 dimatikan untuk pipeline Gainer+UTBot
  */
 
 import { getCandles, getAllTickers } from './bitget.js';
@@ -23,7 +25,7 @@ function signalKey(symbol, signal, tf, timestamp) {
 // ── Cek EMA21 bullish untuk timeframe tertentu ────────────────────────────────
 async function isEMABullish(symbol, tf) {
   try {
-    const periodMs = tf === '4h' ? 14400000 : 3600000;
+    const periodMs = tf === '4H' ? 14400000 : 3600000;
     const raw      = await getCandles(symbol, tf, 60);
     if (!Array.isArray(raw) || raw.length < 25) return true;
 
@@ -40,22 +42,35 @@ async function isEMABullish(symbol, tf) {
     const lastClose = closes[closes.length - 1];
     const bullish   = ema21 ? lastClose > ema21 : true;
 
-    log('utbot', `  [${tf.toUpperCase()} EMA21] ${symbol}: close=${lastClose?.toFixed(6)} EMA21=${ema21?.toFixed(6)} → ${bullish ? '✅' : '❌'}`);
+    log('utbot', `  [${tf} EMA21] ${symbol}: close=${lastClose?.toFixed(6)} EMA21=${ema21?.toFixed(6)} → ${bullish ? '✅' : '❌'}`);
     return bullish;
   } catch {
     return true;
   }
 }
 
+// ── Normalisasi timeframe string ke format Bitget API ────────────────────────
+// Bitget pakai: '1H', '4H', '1D' (huruf besar)
+function normalizeTF(tf) {
+  const map = {
+    '1h': '1H', '4h': '4H', '1d': '1D',
+    '1H': '1H', '4H': '4H', '1D': '1D',
+  };
+  return map[tf] ?? tf.toUpperCase();
+}
+
 // ── Scan satu timeframe untuk satu symbol ────────────────────────────────────
 async function scanTimeframe(symbol, tf, cfg, _retry = 0) {
-  const { keyValue, atrPeriod, filter1H_EMA21 } = cfg;
+  const { keyValue, atrPeriod, filterEMA21 } = cfg;
   const MAX_RETRY = 2;
-  const periodMs  = tf === '4h' ? 14400000 : 3600000;
+
+  // Normalisasi ke format Bitget
+  const bitgetTF  = normalizeTF(tf);
+  const periodMs  = bitgetTF === '4H' ? 14400000 : 3600000;
 
   try {
     const candleLimit = Math.max(atrPeriod * 3 + 20, 60);
-    const raw         = await getCandles(symbol, tf, candleLimit);
+    const raw         = await getCandles(symbol, bitgetTF, candleLimit);
     if (!Array.isArray(raw) || raw.length < atrPeriod + 10) return null;
 
     const now         = Date.now();
@@ -75,14 +90,14 @@ async function scanTimeframe(symbol, tf, cfg, _retry = 0) {
     if (!result || result.signal !== 'BUY') return null;
 
     // Deduplikasi per timeframe
-    const key = signalKey(symbol, result.signal, tf, lastTs);
+    const key = signalKey(symbol, result.signal, bitgetTF, lastTs);
     if (_sentSignals.has(key)) return null;
 
-    // Filter EMA21 per timeframe (hanya untuk 1H jika filter1H_EMA21 aktif)
-    if (tf === '1h' && filter1H_EMA21 !== false) {
-      const bullish = await isEMABullish(symbol, '1h');
+    // Filter EMA21 (opsional, dimatikan untuk pipeline 4H)
+    if (filterEMA21) {
+      const bullish = await isEMABullish(symbol, bitgetTF);
       if (!bullish) {
-        log('utbot', `  ${symbol} [1H] BUY tapi EMA21 bearish → difilter`);
+        log('utbot', `  ${symbol} [${bitgetTF}] BUY tapi EMA21 bearish → difilter`);
         return null;
       }
     }
@@ -101,7 +116,7 @@ async function scanTimeframe(symbol, tf, cfg, _retry = 0) {
     const ema21val = calcEMA(closes, 21);
 
     return {
-      tf,
+      tf: bitgetTF,
       signal:       result.signal,
       close:        result.close,
       trailingStop: result.trailingStop,
@@ -118,38 +133,68 @@ async function scanTimeframe(symbol, tf, cfg, _retry = 0) {
 
     if (isTimeout && _retry < MAX_RETRY) {
       const waitMs = 3000 * (_retry + 1);
-      log('utbot', `  ⏳ ${symbol} [${tf}] timeout — retry ${_retry + 1}/${MAX_RETRY} dalam ${waitMs / 1000}s`);
+      log('utbot', `  ⏳ ${symbol} [${bitgetTF}] timeout — retry ${_retry + 1}/${MAX_RETRY} dalam ${waitMs / 1000}s`);
       await sleep(waitMs);
       return scanTimeframe(symbol, tf, cfg, _retry + 1);
     }
 
-    if (isTimeout) log('utbot', `  ⚠ ${symbol} [${tf}] timeout setelah ${MAX_RETRY + 1}x — skip`);
-    else           log('utbot_error', `Scan ${symbol} [${tf}]: ${err.message}`);
+    if (isTimeout) log('utbot', `  ⚠ ${symbol} [${bitgetTF}] timeout setelah ${MAX_RETRY + 1}x — skip`);
+    else           log('utbot_error', `Scan ${symbol} [${bitgetTF}]: ${err.message}`);
     return null;
   }
 }
 
-// ── Scan symbol di 1H DAN 4H, return jika salah satu BUY ────────────────────
+// ── Scan symbol sesuai config timeframe ──────────────────────────────────────
 async function scanSymbol(symbol, cfg) {
-  const { keyValue, atrPeriod } = cfg;
+  const { timeframes, keyValue, atrPeriod } = cfg;
 
-  // Scan 1H dan 4H secara paralel
-  const [res1H, res4H] = await Promise.all([
-    scanTimeframe(symbol, '1h', cfg),
-    scanTimeframe(symbol, '4h', cfg),
-  ]);
+  // Scan semua timeframe yang dikonfigurasi secara paralel
+  const results = await Promise.all(
+    timeframes.map(tf => scanTimeframe(symbol, tf, cfg))
+  );
 
-  if (!res1H && !res4H) return null;
+  const validResults = results.filter(Boolean);
+  if (!validResults.length) return null;
 
-  // Tentukan timeframe mana yang trigger
-  const triggered1H = !!res1H;
-  const triggered4H = !!res4H;
-  const primary      = res4H || res1H; // prefer 4H jika keduanya ada (lebih kuat)
+  // Tentukan label timeframe yang trigger
+  const triggeredTFs = validResults.map(r => r.tf);
+  const tfLabel      = triggeredTFs.length > 1
+    ? triggeredTFs.join('+') + ' 🔥'
+    : triggeredTFs[0];
 
-  const tfLabel = triggered1H && triggered4H ? '1H+4H 🔥' : triggered4H ? '4H' : '1H';
-  const score   = triggered1H && triggered4H ? 80 : triggered4H ? 65 : 50;
+  // Score: lebih banyak TF = lebih tinggi
+  const score = triggeredTFs.length > 1 ? 80
+    : triggeredTFs[0] === '4H'          ? 65
+    : 50;
+
+  // Prefer 4H jika ada, fallback ke TF lain
+  const primary = validResults.find(r => r.tf === '4H') ?? validResults[0];
 
   log('utbot', `  🔔 BUY [${tfLabel}]: ${symbol} @ ${primary.close} | TS=${primary.trailingStop.toFixed(6)}`);
+
+  // Build signals object per TF
+  const signalsObj = { utbotSignal: {
+    bullish: true,
+    label: `UT Bot BUY [${tfLabel}] — close ${primary.close} cross above trailing stop ${primary.trailingStop.toFixed(6)}`,
+  }};
+
+  for (const r of validResults) {
+    signalsObj[`tf_${r.tf}`] = {
+      bullish: true,
+      label: `${r.tf} signal ✅ | EMA21=${r.ema21val?.toFixed(6) ?? '—'} | Low20=${r.low20?.toFixed(6)}`,
+    };
+  }
+
+  // TF yang tidak trigger
+  for (const tf of timeframes) {
+    const bitgetTF = normalizeTF(tf);
+    if (!triggeredTFs.includes(bitgetTF)) {
+      signalsObj[`tf_${bitgetTF}`] = {
+        bullish: false,
+        label: `${bitgetTF}: tidak ada signal`,
+      };
+    }
+  }
 
   return {
     symbol,
@@ -162,8 +207,7 @@ async function scanSymbol(symbol, cfg) {
     lastPrice:    primary.close,
     slPrice:      primary.slPrice,
     timeframe:    tfLabel,
-    triggered1H,
-    triggered4H,
+    triggeredTFs,
     zones: [{
       type:        'UTBot',
       entryPct:    100,
@@ -173,27 +217,9 @@ async function scanSymbol(symbol, cfg) {
     }],
     strategy:  'utbot',
     triggered: true,
-    signals: {
-      utbotSignal: {
-        bullish: true,
-        label: `UT Bot BUY [${tfLabel}] — close ${primary.close} cross above trailing stop ${primary.trailingStop.toFixed(6)}`,
-      },
-      atrTrailing: {
-        bullish: true,
-        label: `ATR=${primary.atr.toFixed(6)} | nLoss=${primary.nLoss.toFixed(6)} | key=${keyValue} atr=${atrPeriod}`,
-      },
-      tf1H: triggered1H ? {
-        bullish: true,
-        label: `1H signal ✅ | EMA21=${res1H.ema21val?.toFixed(6) ?? '—'} | Low20=${res1H.low20?.toFixed(6)}`,
-      } : { bullish: false, label: '1H: tidak ada signal' },
-      tf4H: triggered4H ? {
-        bullish: true,
-        label: `4H signal ✅ | EMA21=${res4H.ema21val?.toFixed(6) ?? '—'} | Low20=${res4H.low20?.toFixed(6)}`,
-      } : { bullish: false, label: '4H: tidak ada signal' },
-    },
-    ema21_1H: res1H?.ema21val ?? null,
-    ema21_4H: res4H?.ema21val ?? null,
-    matchCount: (triggered1H ? 1 : 0) + (triggered4H ? 1 : 0),
+    signals:   signalsObj,
+    ema21_primary: primary.ema21val ?? null,
+    matchCount: validResults.length,
     score,
   };
 }
@@ -202,17 +228,26 @@ async function scanSymbol(symbol, cfg) {
 export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
   const utCfg = config.screening?.utbot ?? {};
 
-  const keyValue       = utCfg.keyValue       ?? 2;
-  const atrPeriod      = utCfg.atrPeriod      ?? 10;
-  const filter1H_EMA21 = utCfg.filter1H_EMA21 !== false;
-  const minVol         = utCfg.minVolume24h   ?? config.screening?.minVolume24h ?? 5_000_000;
-  const maxSignals     = opts.maxSignals       ?? utCfg.maxSignalsPerRun ?? 5;
+  const keyValue       = utCfg.keyValue        ?? 2;
+  const atrPeriod      = utCfg.atrPeriod       ?? 10;
+  const minVol         = utCfg.minVolume24h    ?? config.screening?.minVolume24h ?? 5_000_000;
+  const maxSignals     = opts.maxSignals        ?? utCfg.maxSignalsPerRun ?? 10;
   const quoteAsset     = config.trading.quoteAsset || 'USDT';
   const whitelist      = config.whitelist ?? [];
   const fromGainer     = opts.fromGainer ?? false;
 
-  log('utbot', `══ UT Bot Alert Screener (1H + 4H | key=${keyValue} atr=${atrPeriod} | EMA21-1H: ${filter1H_EMA21 ? 'ON' : 'OFF'}) ══`);
-  log('utbot', `   Mode: EITHER — sinyal lolos jika BUY di 1H ATAU 4H`);
+  // Baca timeframe dari config, default ke ['4H']
+  const configTF  = utCfg.timeframe ?? '4h';
+  const timeframes = Array.isArray(configTF)
+    ? configTF
+    : [configTF];
+
+  // Filter EMA21: dari pipeline gainer selalu false, dari config jika standalone
+  const filterEMA21 = fromGainer
+    ? false
+    : (utCfg.filter1H_EMA21 !== false && timeframes.some(tf => normalizeTF(tf) === '1H'));
+
+  log('utbot', `══ UT Bot Alert Screener (TF: ${timeframes.map(normalizeTF).join('+')} | key=${keyValue} atr=${atrPeriod} | EMA21: ${filterEMA21 ? 'ON' : 'OFF'}) ══`);
 
   let filtered;
 
@@ -220,7 +255,7 @@ export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
     filtered = tickersOrSymbols.filter(t => !hasPosition(t.symbol));
     log('utbot', `Dari gainer pipeline: ${filtered.length} koin`);
   } else {
-    const tickers      = Array.isArray(tickersOrSymbols) ? tickersOrSymbols : [];
+    const tickers       = Array.isArray(tickersOrSymbols) ? tickersOrSymbols : [];
     const cryptoTickers = await filterCryptoOnly(tickers);
     filtered = cryptoTickers
       .filter(t => {
@@ -233,7 +268,7 @@ export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
       .sort((a, b) => parseFloat(b.usdtVol || 0) - parseFloat(a.usdtVol || 0));
   }
 
-  log('utbot', `Scanning ${filtered.length} koin (1H+4H paralel)...`);
+  log('utbot', `Scanning ${filtered.length} koin (TF: ${timeframes.map(normalizeTF).join('+')})...`);
 
   const signals  = [];
   let   timeouts = 0;
@@ -242,7 +277,7 @@ export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
   for (let i = 0; i < filtered.length; i++) {
     const coin    = filtered[i];
     const before  = Date.now();
-    const result  = await scanSymbol(coin.symbol, { keyValue, atrPeriod, filter1H_EMA21 });
+    const result  = await scanSymbol(coin.symbol, { keyValue, atrPeriod, filterEMA21, timeframes });
     const elapsed = Date.now() - before;
 
     if (elapsed > 20000) {
@@ -268,14 +303,14 @@ export async function runUTBotScreener(tickersOrSymbols, opts = {}) {
       }
     }
 
-    // Jeda adaptif — lebih longgar karena sekarang scan 2 TF per koin
+    // Jeda adaptif
     if (i % 10 === 9)        await sleep(1500);
     else if (i % 5 === 4)    await sleep(800);
     else if (elapsed > 8000) await sleep(800);
     else                     await sleep(300);
   }
 
-  // Sort: 1H+4H dulu, lalu 4H only, lalu 1H only
+  // Sort by score tertinggi
   signals.sort((a, b) => b.score - a.score);
 
   log('utbot', `UT Bot selesai → ${signals.length} BUY signal`);
